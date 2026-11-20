@@ -23,6 +23,12 @@ public class AttendanceController {
         this.attendanceRepository = attendanceRepository;
     }
 
+    // GET /attendances -> todos os registros do usuário (Histórico)
+    @GetMapping
+    public List<Attendance> list(@AuthenticationPrincipal User user) {
+        return attendanceRepository.findByUserIdOrderByDateDesc(user.getId());
+    }
+
     // GET /attendances/month?month=2026-11 -> registros de um mês (Calendário)
     @GetMapping("/month")
     public List<Attendance> listByMonth(@AuthenticationPrincipal User user, @RequestParam String month) {
