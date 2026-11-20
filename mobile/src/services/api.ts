@@ -1,8 +1,13 @@
 import axios from 'axios';
+import { Platform } from 'react-native';
 import { getToken } from '../storage/storage';
 
-// TROQUE pelo IP do computador que está rodando o backend (veja o README)
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.0.10:8080';
+// Endereço do computador nos simuladores. No celular físico, configure
+// EXPO_PUBLIC_API_URL com o IP do computador na rede Wi-Fi (veja o README).
+const DEFAULT_API_URL = Platform.OS === 'android'
+  ? 'http://10.0.2.2:8080'
+  : 'http://localhost:8080';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || DEFAULT_API_URL;
 
 export const api = axios.create({ baseURL: API_URL });
 

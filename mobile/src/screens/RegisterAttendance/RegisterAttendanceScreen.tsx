@@ -6,11 +6,12 @@ import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import { colors, typeLabels } from '../../theme';
 import { brToISO, isoToBR, todayISO } from '../../utils/date';
+import type { RootStackScreenProps } from '../../navigation/types';
 
 const TYPES: AttendanceType[] = ['OFFICE', 'REMOTE', 'ABSENCE'];
 
 // Tela usada para CRIAR (sem record) e para EDITAR/EXCLUIR (com record nos parâmetros)
-export function RegisterAttendanceScreen({ route, navigation }: any) {
+export function RegisterAttendanceScreen({ route, navigation }: RootStackScreenProps<'RegisterAttendance'>) {
   const record = route.params?.record;           // registro a editar (vem do Histórico ou Calendário)
   const startDate = route.params?.date || todayISO(); // data clicada no Calendário
 
@@ -39,6 +40,8 @@ export function RegisterAttendanceScreen({ route, navigation }: any) {
   }
 
   function handleDelete() {
+    if (!record) return;
+
     Alert.alert('Excluir', 'Deseja excluir este registro?', [
       { text: 'Cancelar' },
       {

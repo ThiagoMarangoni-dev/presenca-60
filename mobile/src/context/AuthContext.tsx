@@ -22,10 +22,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Quando o app abre: procura o usuário salvo no AsyncStorage
   useEffect(() => {
-    getUser().then((savedUser) => {
-      setUser(savedUser);
-      setLoading(false);
-    });
+    let active = true;
+
+    async function restoreSession() {
+      try {
+        const savedUser = await getUser();
+        if (active) setUser(savedUser);
+      } catch {
+        // Se a sessão salva não puder ser lida, permite entrar novamente.
+        if (active) setUser(null);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    restoreSession();
+    return () => { active = false; };
   }, []);
 
   async function signIn(email: string, password: string) {

@@ -5,8 +5,9 @@ import { getErrorMessage } from '../../services/api';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import { colors } from '../../theme';
+import type { RootStackScreenProps } from '../../navigation/types';
 
-export function LoginScreen({ navigation }: any) {
+export function LoginScreen({ navigation }: RootStackScreenProps<'Login'>) {
   const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

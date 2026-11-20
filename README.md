@@ -60,6 +60,9 @@ backend/src/main/java/br/com/fiap/presenca60/
 ├── model/          User, Attendance, AttendanceType   (tabelas do banco)
 ├── repository/     UserRepository, AttendanceRepository   (acesso ao banco)
 ├── security/       TokenService, SecurityFilter, SecurityConfig   (JWT)
+├── config/         configuração do relógio usado no resumo mensal
+├── dto/            resposta do resumo mensal
+├── service/        SummaryService   (cálculo da presença e da meta)
 └── controller/     AuthController, AttendanceController, UserController, SummaryController   (rotas da API)
 
 mobile/src/
@@ -75,7 +78,7 @@ mobile/src/
 ├── context/        AuthContext.tsx (usuário logado)
 ├── services/       api.ts (Axios + token)
 ├── storage/        storage.ts (AsyncStorage)
-├── components/     Button, Input
+├── components/     Button, Input, AttendanceProgress
 ├── utils/          date.ts
 ├── theme.ts        cores
 └── types.ts        tipos TypeScript
@@ -98,13 +101,17 @@ No Windows, use `mvnw.cmd spring-boot:run`.
 
 A API sobe em `http://localhost:8080` e o banco H2 é criado sozinho. Para ver as tabelas, abra `http://localhost:8080/h2-console` com JDBC URL `jdbc:h2:file:./data/presenca60`, usuário `sa` e senha vazia.
 
-### 2. Configurar o IP da API
+### 2. Configurar o endereço da API
 
-O celular não enxerga o `localhost` do computador. Descubra o IP do computador na rede Wi-Fi (`ipconfig` no Windows) e coloque em `mobile/src/services/api.ts`:
+Com o backend rodando no mesmo computador, o app já usa `http://localhost:8080` no simulador iOS e no navegador, e `http://10.0.2.2:8080` no emulador Android do Android Studio.
 
-```ts
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.0.10:8080'; // <- seu IP
+No **celular físico**, `localhost` aponta para o próprio celular. Descubra o IP do computador na rede Wi-Fi (`ipconfig` no Windows) e crie `mobile/.env.local` com o endereço correto:
+
+```env
+EXPO_PUBLIC_API_URL=http://192.168.1.3:8080
 ```
+
+O IP acima é um exemplo: substitua pelo IP atual do seu computador. `EXPO_PUBLIC_API_URL` tem prioridade sobre os endereços padrão. Após alterar essa configuração, reinicie o Expo e recarregue o app.
 
 ### 3. Mobile
 
@@ -115,6 +122,23 @@ npx expo start
 ```
 
 Escaneie o QR Code com o Expo Go. O celular e o computador precisam estar na mesma rede Wi-Fi.
+
+Se estiver usando o **simulador iOS no mesmo Mac que roda o backend**, você pode iniciar o Expo apontando para a API local:
+
+```bash
+EXPO_PUBLIC_API_URL=http://localhost:8080 npx expo start
+```
+
+Esse endereço é para o simulador; no celular físico, use o IP do computador na rede Wi-Fi.
+
+### Navegação entre as telas
+
+- Sem sessão salva, o app abre no **Login**. O link “Não tem conta? Cadastre-se” abre o **Cadastro**.
+- Após entrar ou criar uma conta, aparecem as abas **Início (Dashboard)**, **Calendário**, **Histórico** e **Perfil**.
+- O Dashboard mostra os registros do mês e a **presença já realizada**, com uma barra de 0% a 100%, um marcador da meta e quantos dias faltam para alcançá-la. O botão **Registrar presença** abre um novo registro.
+- O progresso é atualizado ao voltar ao Dashboard após criar, editar ou excluir registros e após alterar a meta no Perfil.
+- No Calendário, toque em uma data para registrar ou editar a presença. No Histórico, toque em um registro para editá-lo.
+- Ao salvar ou voltar, o app retorna à tela anterior. No Perfil, **Sair** retorna ao Login.
 
 ---
 
@@ -131,7 +155,7 @@ Todas, menos as de `/auth`, precisam do header `Authorization: Bearer <token>`.
 | POST | `/attendances` | Cria registro `{ date, type, note }` |
 | PUT | `/attendances/{id}` | Edita registro |
 | DELETE | `/attendances/{id}` | Exclui registro |
-| GET | `/summary` | Cálculo da meta do mês (Dashboard) |
+| GET | `/summary?month=2026-11` | Presença realizada e progresso da meta do mês, para o usuário autenticado |
 | GET / PUT / DELETE | `/users/me` | Ver, editar e excluir a conta (Perfil) |
 
 ---
@@ -158,16 +182,45 @@ Todas, menos as de `/auth`, precisam do header `Authorization: Bearer <token>`.
 - **Excluir:** botão Excluir faz `api.delete('/attendances/' + id)`.
 - **Atualização das telas:** cada tela recarrega os dados com `useFocusEffect`, toda vez que aparece.
 
-### Cálculo da meta (`SummaryController`)
+### Cálculo da presença e da meta (`SummaryService`)
 
 ```
-dias úteis   = segundas a sextas do mês - folgas
-necessários  = dias úteis x meta% (arredondado para cima)
-porcentagem  = dias no escritório / dias úteis
-faltam       = necessários - dias no escritório
+dias considerados = segundas a sextas do mês - folgas nesses dias
+presenças          = dias de escritório em dias úteis, até hoje
+necessários        = dias considerados x meta / 100 (arredondado para cima)
+porcentagem        = presenças / dias considerados x 100
+faltam             = máximo entre (necessários - presenças) e zero
 ```
 
-Exemplo: novembro/2026 tem 21 dias úteis. 21 × 60% = 12,6, que arredonda para **13 dias** no escritório.
+O denominador considera o mês inteiro. Presenças futuras e registros de fim de semana não contam como presença realizada. Folgas em dias úteis, inclusive futuras, reduzem os dias considerados para a meta mensal. Feriados não são descontados automaticamente.
+
+O backend usa o fuso `America/Sao_Paulo` para determinar a data de hoje; ele pode ser alterado com a propriedade `app.time-zone`. O percentual é apresentado com até uma casa decimal. A meta é atingida pela quantidade de dias necessários, sem depender do arredondamento do percentual.
+
+Exemplo: 20 dias considerados, meta de 60% e 6 presenças resultam em **30% de presença**, **6 de 12 dias necessários** e **6 dias restantes**. A barra mostra 30% de preenchimento, com a meta marcada em 60%. Já um mês com 21 dias considerados exige `ceil(21 × 60 / 100) = 13` presenças.
+
+A rota `GET /summary?month=YYYY-MM` exige autenticação e um mês válido. Exemplo de resposta:
+
+```json
+{
+  "month": "2026-11",
+  "referenceDate": "2026-11-20",
+  "eligibleDays": 20,
+  "officeDays": 6,
+  "requiredDays": 12,
+  "remainingDays": 6,
+  "attendancePercent": 30.0,
+  "targetPercent": 60,
+  "targetReached": false
+}
+```
+
+Se todos os dias úteis forem folgas, `attendancePercent` será `null`, os dias necessários/restantes serão zero e `targetReached` será `false`. Nesse caso, o Dashboard mostra “Sem dias úteis considerados neste mês”, sem barra ou mensagem de meta alcançada.
+
+### Validar as alterações
+
+No backend, execute `./mvnw test` para validar os cálculos, a autenticação e o isolamento dos resumos entre usuários. Os testes usam banco H2 em memória e datas controladas, sem alterar o banco local do aplicativo.
+
+No mobile, execute `npx tsc --noEmit` para validar os tipos. No simulador, confira o progresso após salvar, editar e excluir uma presença e depois de alterar a meta no Perfil.
 
 ---
 

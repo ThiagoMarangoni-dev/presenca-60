@@ -1,19 +1,16 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
-import { colors } from './src/theme';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AuthProvider } from './src/context/AuthContext';
+import { Routes } from './src/navigation/Routes';
 
-// Tela provisória: as telas de verdade são ligadas aqui quando a navegação ficar pronta
 export default function App() {
   return (
-    <View style={styles.container}>
+    <SafeAreaProvider>
       <StatusBar style="dark" />
-      <Text style={styles.title}>Presença 60</Text>
-    </View>
+      <AuthProvider>
+        <Routes />
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
-  title: { fontSize: 28, fontWeight: 'bold', color: colors.primary },
-});

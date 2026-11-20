@@ -1,12 +1,13 @@
 import React, { useCallback, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { api, getErrorMessage } from '../services/api';
-import { Attendance } from '../types';
-import { colors, typeLabels } from '../theme';
-import { isoToBR } from '../utils/date';
+import { api, getErrorMessage } from '../../services/api';
+import { Attendance } from '../../types';
+import { colors, typeLabels } from '../../theme';
+import { isoToBR } from '../../utils/date';
+import type { MainTabScreenProps } from '../../navigation/types';
 
-export function HistoryScreen({ navigation }: any) {
+export function HistoryScreen({ navigation }: MainTabScreenProps<'History'>) {
   const [records, setRecords] = useState<Attendance[]>([]);
   const [error, setError] = useState('');
 

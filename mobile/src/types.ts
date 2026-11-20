@@ -15,3 +15,15 @@ export interface Attendance {
   type: AttendanceType;
   note: string;
 }
+
+export interface MonthlySummary {
+  month: string;
+  referenceDate: string;
+  eligibleDays: number;
+  officeDays: number;
+  requiredDays: number;
+  remainingDays: number;
+  attendancePercent: number | null;
+  targetPercent: number;
+  targetReached: boolean;
+}

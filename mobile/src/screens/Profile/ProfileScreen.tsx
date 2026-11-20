@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
-import { useAuth } from '../context/AuthContext';
-import { api, getErrorMessage } from '../services/api';
-import { Input } from '../components/Input';
-import { Button } from '../components/Button';
-import { colors } from '../theme';
+import { useAuth } from '../../context/AuthContext';
+import { api, getErrorMessage } from '../../services/api';
+import { Input } from '../../components/Input';
+import { Button } from '../../components/Button';
+import { colors } from '../../theme';
 
 export function ProfileScreen() {
   const { user, updateUser, signOut } = useAuth();

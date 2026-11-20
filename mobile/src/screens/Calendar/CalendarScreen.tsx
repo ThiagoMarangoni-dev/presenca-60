@@ -4,12 +4,13 @@ import { useFocusEffect } from '@react-navigation/native';
 import { api, getErrorMessage } from '../../services/api';
 import { Attendance } from '../../types';
 import { colors, typeLabels } from '../../theme';
+import type { MainTabScreenProps } from '../../navigation/types';
 
 const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 const WEEK_DAYS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
-export function CalendarScreen({ navigation }: any) {
+export function CalendarScreen({ navigation }: MainTabScreenProps<'Calendar'>) {
   const [currentDate, setCurrentDate] = useState(new Date()); // mês que está aparecendo
   const [records, setRecords] = useState<Attendance[]>([]);
   const [error, setError] = useState('');
