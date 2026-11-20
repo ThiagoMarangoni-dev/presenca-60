@@ -8,6 +8,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.YearMonth;
+import java.util.List;
 
 // CRUD dos registros de presença. @AuthenticationPrincipal = usuário que veio do token
 @RestController
@@ -19,6 +21,13 @@ public class AttendanceController {
 
     public AttendanceController(AttendanceRepository attendanceRepository) {
         this.attendanceRepository = attendanceRepository;
+    }
+
+    // GET /attendances/month?month=2026-11 -> registros de um mês (Calendário)
+    @GetMapping("/month")
+    public List<Attendance> listByMonth(@AuthenticationPrincipal User user, @RequestParam String month) {
+        YearMonth yearMonth = YearMonth.parse(month);
+        return attendanceRepository.findByUserIdAndDateBetween(user.getId(), yearMonth.atDay(1), yearMonth.atEndOfMonth());
     }
 
     // POST /attendances -> cria um registro
